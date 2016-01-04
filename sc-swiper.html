@@ -9,7 +9,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 <link rel="import" href="../polymer/polymer.html" />
 <link rel="stylesheet" href="../swiper/dist/css/swiper.min.css" />
-<script src="../swiper/dist/js/swiper.js"></script>
+<script src="../swiper/dist/js/swiper.min.js"></script>
 
 <dom-module id="sc-swiper">
   <template id="main">
@@ -20,10 +20,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
 
       .swiper-button-prev, .swiper-container-rtl .swiper-button-next {
-        background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2027%2044%27%3E%3Cpath%20d%3D%27M0%2C22L22%2C0l2.1%2C2.1L4.2%2C22l19.9%2C19.9L22%2C44L0%2C22L0%2C22L0%2C22z%27%20fill%3D%27%23007aff%27%2F%3E%3C%2Fsvg%3E');
+        background-image: url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2027%2044%27%3E%3Cpath%20d%3D%27M0%2C22L22%2C0l2.1%2C2.1L4.2%2C22l19.9%2C19.9L22%2C44L0%2C22L0%2C22L0%2C22z%27%20fill%3D%27%23DDDDDD%27%2F%3E%3C%2Fsvg%3E');
       }
       .swiper-button-next, .swiper-container-rtl .swiper-button-prev {
-        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2027%2044%27%3E%3Cpath%20d%3D%27M27%2C22L27%2C22L5%2C44l-2.1-2.1L22.8%2C22L2.9%2C2.1L5%2C0L27%2C22L27%2C22z%27%20fill%3D%27%23007aff%27%2F%3E%3C%2Fsvg%3E");
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2027%2044%27%3E%3Cpath%20d%3D%27M27%2C22L27%2C22L5%2C44l-2.1-2.1L22.8%2C22L2.9%2C2.1L5%2C0L27%2C22L27%2C22z%27%20fill%3D%27%23DDDDDD%27%2F%3E%3C%2Fsvg%3E");
       }
 
       .swiper-container {
@@ -38,15 +38,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       .swiper-container-horizontal > .swiper-pagination {
         bottom: 0;
       }
+      :host ::content .swiper-pagination-bullet-active {
+        background: white !important;
+        border: 1px solid gray;
+      }
 
-      ::content .swiper-slide {
+      :host /deep/ .swiper-slide {
         background-color: #eeeeee;
         background-position: center center;
         background-size: contain;
         background-repeat: no-repeat;
       }
 
-      ::content .swiper-slide .caption {
+      :host /deep/ .swiper-slide .caption {
         display: inline-block;
         width: 100%;
         text-align: center;
@@ -57,7 +61,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
 
-    <div id="slides" hidden>
+    <div id="slides">
       <content></content>
     </div>
 
@@ -180,15 +184,11 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     },
 
     nav: function (property, nodes) {
-      return property && nodes && nodes.length && nodes.length > 1;
+      return property && nodes;
     },
 
     getOptions: function () {
       return Object.keys(this.properties).reduce(function (options, key) {
-        if (typeof this.options[key] !== 'undefined') {
-          options[key] = this.options[key];
-        }
-
         if (this.$[key]) {
           if (this[key]) {
             options[key] = this.$[key];
@@ -208,7 +208,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         }
 
         return options;
-      }.bind(this), {});
+      }.bind(this), Object.assign({}, this.options));
     },
 
     attached: function () {
@@ -219,32 +219,31 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       this._initializer = setTimeout(function () {
         // First clone real nodes into the wrapper
         var nodes = [];
-        var slides = this.querySelectorAll('#slides > *:not(template):not(.swiper-slide)');
+        var slides = this.querySelectorAll('#slides > *:not(template)');
         var wrapper = this.$.wrapper;
 
-        wrapper.innerHTML = '';
-        wrapper.removeAttribute('style');
-
         for (var i = 0; i < slides.length; i++) {
-          slides[i].classList.add('swiper-slide');
+          if (slides[i].tagName && !/template/i.test(slides[i].tagName)) {
+            slides[i].classList.add('swiper-slide');
 
-          var node = wrapper.appendChild(slides[i].cloneNode(true));
-          node.removeEventListener('tap', this.view);
-          node.addEventListener('tap', this.view);
+            var node = wrapper.appendChild(slides[i]);
+            node.removeEventListener('tap', this.view);
+            node.addEventListener('tap', this.view);
 
-          var url = node.style.backgroundImage;
-          if (url) {
-            url = url.replace(/^url\(['"]?([^'"\)]*).*?$/, '$1');
-            var img = new window.Image();
+            var url = node.style.backgroundImage;
+            if (url) {
+              url = url.replace(/^url\(['"]?([^'"\)]*).*?$/, '$1');
+              var img = new window.Image();
 
-            img.addEventListener('error', function () {
-              this.fire('error');
-            }.bind(this));
+              img.addEventListener('error', function () {
+                this.fire('error');
+              }.bind(this));
 
-            img.src = url;
+              img.src = url;
+            }
+
+            nodes.push(node);
           }
-
-          nodes.push(node);
         }
 
         // Then create the Swiper instance
@@ -259,13 +258,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         return setTimeout(this.render.bind(this), 50);
       }
 
-      if (this._swiper) {
-        this.$.prev.classList.remove(this._swiper.params.buttonDisabledClass);
-        this.$.next.classList.remove(this._swiper.params.buttonDisabledClass);
-        this._swiper.destroy();
+      if (!this._swiper) {
+        this._swiper = new window.Swiper(this.$.swiper, this.getOptions());
       }
 
-      this._swiper = new window.Swiper(this.$.swiper, this.getOptions());
     },
 
     view: function (e) {
